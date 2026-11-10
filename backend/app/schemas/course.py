@@ -9,7 +9,7 @@ class CourseCreate(BaseModel):
 class CourseResponse(BaseModel):
     id: int
     name: str
-    description: str
+    description: str | None
 
     class Config:
         from_attributes = True
