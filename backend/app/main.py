@@ -1,5 +1,7 @@
+import asyncio
+
 from fastapi import FastAPI
-from app.database.connection import Base, engine
+from app.database.connection import Base, engine, SessionLocal
 
 from app.models.user import User
 from app.models.course import Course
@@ -23,9 +25,27 @@ from app.routers.order_item import router as order_item_router
 from app.routers.review import router as review_router
 from app.routers.payment import router as payment_router
 from app.routers.admin_reminder_log import router as admin_reminder_log_router
+from app.tasks.order_reminders import check_stale_orders
 
 
 app = FastAPI(title="CampusBite API")
+
+
+async def stale_order_reminder_loop():
+    while True:
+        db = SessionLocal()
+
+        try:
+            check_stale_orders(db)
+        finally:
+            db.close()
+
+        await asyncio.sleep(60)
+
+
+@app.on_event("startup")
+async def start_background_tasks():
+    asyncio.create_task(stale_order_reminder_loop())
 
 
 Base.metadata.create_all(bind=engine)
