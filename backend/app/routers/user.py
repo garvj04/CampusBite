@@ -4,8 +4,11 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
+from app.core.security import hash_password
+
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
 
 @router.post("/", response_model=UserResponse)
 def create_user(
@@ -25,7 +28,8 @@ def create_user(
     new_user = User(
         name=user.name,
         email=user.email,
-        password=user.password
+        password=hash_password(user.password),
+        role="CUSTOMER"
     )
 
     db.add(new_user)
@@ -34,9 +38,11 @@ def create_user(
 
     return new_user
 
+
 @router.get("/", response_model=list[UserResponse])
 def get_users(db: Session = Depends(get_db)):
     return db.query(User).all()
+
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
