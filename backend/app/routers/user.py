@@ -5,7 +5,10 @@ from app.database.connection import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.core.security import hash_password
-from app.core.dependencies import get_current_user
+from app.core.dependencies import (
+    get_current_user,
+    require_role
+)
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -46,6 +49,19 @@ def get_users(
     current_user: User = Depends(get_current_user)
 ):
     return db.query(User).all()
+
+
+@router.get("/customer-only")
+def customer_only(
+    current_user: User = Depends(
+        require_role("CUSTOMER")
+    )
+):
+    return {
+        "message": "Customer access granted",
+        "user_id": current_user.id,
+        "role": current_user.role
+    }
 
 
 @router.get("/{user_id}", response_model=UserResponse)
