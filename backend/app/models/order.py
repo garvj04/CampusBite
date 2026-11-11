@@ -19,6 +19,12 @@ class Order(Base):
         nullable=False
     )
 
+    delivery_partner_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True
+    )
+
     total_amount = Column(Float, nullable=False)
 
     status = Column(

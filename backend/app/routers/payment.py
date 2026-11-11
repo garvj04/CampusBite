@@ -1,0 +1,123 @@
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.database.connection import get_db
+from app.models.payment import PaymentLedger
+from app.models.order import Order
+from app.schemas.payment import PaymentCreate, PaymentResponse
+from app.core.dependencies import get_current_user
+
+
+router = APIRouter(
+    prefix="/payments",
+    tags=["Payments"]
+)
+
+
+@router.post("/", response_model=PaymentResponse)
+def create_payment(
+    payment: PaymentCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    order = db.query(Order).filter(
+        Order.id == payment.order_id
+    ).first()
+
+    if not order:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    existing_payment = db.query(PaymentLedger).filter(
+        PaymentLedger.order_id == payment.order_id
+    ).first()
+
+    if existing_payment:
+        raise HTTPException(
+            status_code=400,
+            detail="Payment already exists for this order"
+        )
+
+    new_payment = PaymentLedger(
+        order_id=order.id,
+        amount=order.total_amount,
+        payment_method=payment.payment_method,
+        status="PAID",
+        transaction_id=f"DUMMY-{uuid4().hex[:12].upper()}"
+    )
+
+    db.add(new_payment)
+    db.commit()
+    db.refresh(new_payment)
+
+    return new_payment
+
+
+@router.get(
+    "/",
+    response_model=list[PaymentResponse]
+)
+def get_payments(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return db.query(PaymentLedger).all()
+
+
+@router.get(
+    "/order/{order_id}",
+    response_model=PaymentResponse
+)
+def get_payment_for_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    payment = db.query(PaymentLedger).filter(
+        PaymentLedger.order_id == order_id
+    ).first()
+
+    if not payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found for this order"
+        )
+
+    return payment
+
+
+@router.patch(
+    "/{payment_id}/refund",
+    response_model=PaymentResponse
+)
+def refund_payment(
+    payment_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    payment = db.query(PaymentLedger).filter(
+        PaymentLedger.id == payment_id
+    ).first()
+
+    if not payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found"
+        )
+
+    if payment.status != "PAID":
+        raise HTTPException(
+            status_code=400,
+            detail="Only PAID payments can be refunded"
+        )
+
+    payment.status = "REFUNDED"
+
+    db.commit()
+    db.refresh(payment)
+
+    return payment
