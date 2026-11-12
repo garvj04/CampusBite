@@ -41,6 +41,7 @@ def login(
     })
 
     return LoginResponse(
+        user_id=user.id,
         access_token=access_token,
         token_type="bearer",
         role=user.role

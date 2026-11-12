@@ -1,0 +1,139 @@
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222;
+  background: #f5f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.page-container {
+  min-height: 100vh;
+  padding: 32px 16px;
+}
+
+.auth-card,
+.dashboard-card {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #e2e6ee;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.auth-card {
+  max-width: 420px;
+  margin-top: 80px;
+}
+
+.auth-card h1,
+.dashboard-card h1 {
+  margin-top: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfd6e2;
+  border-radius: 6px;
+}
+
+form button,
+.dashboard-card > button,
+.restaurant-card button,
+.cart-section button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #2563eb;
+  color: white;
+}
+
+form button:disabled,
+.restaurant-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 10px;
+  margin: 12px 0;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.restaurant-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.restaurant-card {
+  width: 100%;
+  padding: 20px;
+  border: 1px solid #dbe1ea;
+  border-radius: 10px;
+  background: #ffffff;
+  text-align: left;
+}
+
+.restaurant-card h3 {
+  margin-top: 0;
+}
+
+.restaurant-card > span {
+  display: block;
+  margin-top: 12px;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.cart-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e6ee;
+}
+
+@media (max-width: 600px) {
+  .page-container {
+    padding: 16px 10px;
+  }
+
+  .auth-card,
+  .dashboard-card {
+    padding: 20px;
+  }
+}
