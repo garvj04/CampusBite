@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -18,6 +18,30 @@ router = APIRouter(
     prefix="/orders",
     tags=["Orders"]
 )
+
+
+def check_order_access(order, current_user, db, allow_unassigned_delivery=False):
+    if current_user.role == "ADMIN":
+        return
+
+    if current_user.role == "CUSTOMER" and order.customer_id == current_user.id:
+        return
+
+    if current_user.role == "RESTAURANT_OWNER":
+        owned = db.query(Restaurant).filter(
+            Restaurant.id == order.restaurant_id,
+            Restaurant.owner_id == current_user.id
+        ).first()
+        if owned:
+            return
+
+    if current_user.role == "DELIVERY_PARTNER":
+        if order.delivery_partner_id == current_user.id:
+            return
+        if allow_unassigned_delivery and order.status == "READY" and order.delivery_partner_id is None:
+            return
+
+    raise HTTPException(status_code=403, detail="Access denied")
 
 
 ALLOWED_STATUSES = {
@@ -49,8 +73,12 @@ VALID_TRANSITIONS = {
 @router.post("/", response_model=OrderResponse)
 def create_order(
     order: OrderCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
+    if current_user.role != "CUSTOMER" or order.customer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Customers can only create their own orders")
+
     customer = db.query(User).filter(
         User.id == order.customer_id
     ).first()
@@ -87,26 +115,50 @@ def create_order(
 
 @router.get("/", response_model=list[OrderResponse])
 def get_orders(
-    db: Session = Depends(get_db)
+    status: str | None = Query(default=None),
+    restaurant_id: int | None = Query(default=None, ge=1),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    return db.query(Order).all()
+    query = db.query(Order)
 
+    if current_user.role == "CUSTOMER":
+        query = query.filter(Order.customer_id == current_user.id)
+    elif current_user.role == "RESTAURANT_OWNER":
+        query = query.join(Restaurant).filter(Restaurant.owner_id == current_user.id)
+    elif current_user.role == "DELIVERY_PARTNER":
+        query = query.filter(
+            (Order.delivery_partner_id == current_user.id) |
+            ((Order.status == "READY") & (Order.delivery_partner_id.is_(None)))
+        )
+    elif current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if status:
+        normalized_status = status.upper()
+        if normalized_status not in ALLOWED_STATUSES:
+            raise HTTPException(status_code=400, detail="Invalid order status filter")
+        query = query.filter(Order.status == normalized_status)
+
+    if restaurant_id is not None:
+        query = query.filter(Order.restaurant_id == restaurant_id)
+
+    return query.order_by(Order.id.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
 @router.get("/{order_id}", response_model=OrderResponse)
 def get_order(
     order_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    order = db.query(Order).filter(
-        Order.id == order_id
-    ).first()
+    order = db.query(Order).filter(Order.id == order_id).first()
 
     if not order:
-        raise HTTPException(
-            status_code=404,
-            detail="Order not found"
-        )
+        raise HTTPException(status_code=404, detail="Order not found")
 
+    check_order_access(order, current_user, db)
     return order
 
 
@@ -129,6 +181,40 @@ def update_order_status(
             status_code=404,
             detail="Order not found"
         )
+
+    if current_user.role == "ADMIN":
+        pass
+
+    elif current_user.role == "RESTAURANT_OWNER":
+        owned = db.query(Restaurant).filter(
+            Restaurant.id == order.restaurant_id,
+            Restaurant.owner_id == current_user.id
+        ).first()
+
+        if not owned or status_update.status not in {
+            "ACCEPTED", "PREPARING", "READY", "CANCELLED"
+        }:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    elif current_user.role == "DELIVERY_PARTNER":
+        if (
+            order.delivery_partner_id != current_user.id
+            or status_update.status not in {
+                "OUT_FOR_DELIVERY", "DELIVERED"
+            }
+        ):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    elif current_user.role == "CUSTOMER":
+        if (
+            order.customer_id != current_user.id
+            or status_update.status != "CANCELLED"
+            or order.status != "PLACED"
+        ):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    else:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if status_update.status not in ALLOWED_STATUSES:
         raise HTTPException(
@@ -188,6 +274,24 @@ def assign_delivery_partner(
             status_code=400,
             detail="Selected user is not a delivery partner"
         )
+
+    if current_user.role == "RESTAURANT_OWNER":
+        owned = db.query(Restaurant).filter(
+            Restaurant.id == order.restaurant_id,
+            Restaurant.owner_id == current_user.id
+        ).first()
+        if not owned:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    elif current_user.role == "DELIVERY_PARTNER":
+        if (
+            assignment.delivery_partner_id != current_user.id
+            or order.delivery_partner_id is not None
+        ):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    elif current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if order.status != "READY":
         raise HTTPException(

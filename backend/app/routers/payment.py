@@ -32,6 +32,9 @@ def create_payment(
             detail="Order not found"
         )
 
+    if current_user.role != "CUSTOMER" or order.customer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
     existing_payment = db.query(PaymentLedger).filter(
         PaymentLedger.order_id == payment.order_id
     ).first()
@@ -65,7 +68,15 @@ def get_payments(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return db.query(PaymentLedger).all()
+    if current_user.role == "ADMIN":
+        return db.query(PaymentLedger).all()
+
+    if current_user.role == "CUSTOMER":
+        return db.query(PaymentLedger).join(Order).filter(
+            Order.customer_id == current_user.id
+        ).all()
+
+    raise HTTPException(status_code=403, detail="Access denied")
 
 
 @router.get(
@@ -86,6 +97,13 @@ def get_payment_for_order(
             status_code=404,
             detail="Payment not found for this order"
         )
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if current_user.role != "ADMIN" and not (
+        current_user.role == "CUSTOMER"
+        and order.customer_id == current_user.id
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     return payment
 
@@ -109,13 +127,33 @@ def refund_payment(
             detail="Payment not found"
         )
 
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Only admins can issue refunds")
+
     if payment.status != "PAID":
         raise HTTPException(
             status_code=400,
             detail="Only PAID payments can be refunded"
         )
 
+    order = db.query(Order).filter(
+        Order.id == payment.order_id
+    ).first()
+
+    if not order:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found for this payment"
+        )
+
+    if order.status not in ("DELIVERED", "CANCELLED"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only delivered or cancelled orders can be refunded"
+        )
+
     payment.status = "REFUNDED"
+    order.status = "REFUNDED"
 
     db.commit()
     db.refresh(payment)

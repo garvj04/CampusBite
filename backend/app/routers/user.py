@@ -46,7 +46,7 @@ def create_user(
 @router.get("/", response_model=list[UserResponse])
 def get_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role("ADMIN"))
 ):
     return db.query(User).all()
 
@@ -67,7 +67,8 @@ def customer_only(
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     user = db.query(User).filter(
         User.id == user_id
@@ -78,5 +79,8 @@ def get_user(
             status_code=404,
             detail="User not found"
         )
+
+    if current_user.role != "ADMIN" and current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     return user

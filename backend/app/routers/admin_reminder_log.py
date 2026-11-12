@@ -8,7 +8,7 @@ from app.schemas.admin_reminder_log import (
     AdminReminderLogCreate,
     AdminReminderLogResponse
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_role
 
 
 router = APIRouter(
@@ -24,7 +24,7 @@ router = APIRouter(
 def create_reminder_log(
     reminder: AdminReminderLogCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(require_role("ADMIN"))
 ):
     if reminder.order_id is not None:
         order = db.query(Order).filter(
@@ -56,7 +56,7 @@ def create_reminder_log(
 )
 def get_reminder_logs(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(require_role("ADMIN"))
 ):
     return db.query(AdminReminderLog).all()
 
@@ -68,7 +68,7 @@ def get_reminder_logs(
 def get_reminder_log(
     reminder_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(require_role("ADMIN"))
 ):
     reminder = db.query(AdminReminderLog).filter(
         AdminReminderLog.id == reminder_id

@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from app.database.connection import Base, engine, SessionLocal
 
 from app.models.user import User
@@ -30,6 +30,26 @@ from app.tasks.order_reminders import check_stale_orders
 
 
 app = FastAPI(title="CampusBite API")
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    import time
+
+    start_time = time.perf_counter()
+
+    response = await call_next(request)
+
+    process_time = time.perf_counter() - start_time
+
+    response.headers["X-Process-Time"] = str(round(process_time, 4))
+
+    print(
+        f"{request.method} {request.url.path} "
+        f"- {response.status_code} - {process_time:.4f}s"
+    )
+
+    return response
+
 
 
 async def stale_order_reminder_loop():

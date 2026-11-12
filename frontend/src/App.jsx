@@ -4,6 +4,10 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import CustomerOrder from "./pages/CustomerOrder";
 import OrderSuccess from "./pages/OrderSuccess";
+import RestaurantOwnerDashboard from "./pages/RestaurantOwnerDashboard";
+import DeliveryPartnerDashboard from "./pages/DeliveryPartnerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import CustomerOrders from "./pages/CustomerOrders";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
@@ -49,12 +53,12 @@ export default function App() {
     <Routes>
       <Route
         path="/"
-        element={<HomeRedirect />} 
+        element={<HomeRedirect />}
       />
 
       <Route
         path="/login"
-        element={<Login />} 
+        element={<Login />}
       />
 
       <Route
@@ -66,22 +70,27 @@ export default function App() {
       >
         <Route
           path="/customer"
-          element={<CustomerDashboard />} 
+          element={<CustomerDashboard />}
         />
 
         <Route
           path="/customer/restaurant/:restaurantId"
-          element={<RestaurantMenu />} 
+          element={<RestaurantMenu />}
         />
 
         <Route
           path="/customer/order"
-          element={<CustomerOrder />} 
+          element={<CustomerOrder />}
         />
 
         <Route
           path="/customer/order/success"
-          element={<OrderSuccess />} 
+          element={<OrderSuccess />}
+        />
+
+        <Route
+          path="/customer/orders"
+          element={<CustomerOrders />}
         />
       </Route>
 
@@ -95,9 +104,7 @@ export default function App() {
         <Route
           path="/restaurant"
           element={
-            <DashboardPlaceholder
-              title="Restaurant Owner Dashboard"
-            />
+            <RestaurantOwnerDashboard />
           }
         />
       </Route>
@@ -111,11 +118,7 @@ export default function App() {
       >
         <Route
           path="/delivery"
-          element={
-            <DashboardPlaceholder
-              title="Delivery Partner Dashboard"
-            />
-          }
+          element={<DeliveryPartnerDashboard />}
         />
       </Route>
 
@@ -128,11 +131,8 @@ export default function App() {
       >
         <Route
           path="/admin"
-          element={
-            <DashboardPlaceholder
-              title="Admin Dashboard"
-            />
-          }
+          element={<AdminDashboard />}
+
         />
       </Route>
     </Routes>

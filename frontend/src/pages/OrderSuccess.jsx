@@ -4,26 +4,36 @@ export default function OrderSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { orderId, total } = location.state || {};
+  const {
+    orderId,
+    total,
+    paymentStatus,
+    transactionId,
+  } = location.state || {};
 
   return (
     <div className="page-container">
       <div className="dashboard-card">
         <h1>Order Placed Successfully!</h1>
 
-        {orderId && (
-          <p>
-            Your order number is <strong>#{orderId}</strong>.
-          </p>
-        )}
+        <p>Order Number: <strong>#{orderId}</strong></p>
 
         {typeof total === "number" && (
-          <p>
-            Total paid: <strong>₹{total.toFixed(2)}</strong>
-          </p>
+          <p>Total Amount: <strong>₹{total.toFixed(2)}</strong></p>
         )}
 
-        <p>Your order has been placed and is waiting for restaurant confirmation.</p>
+        <h2>Payment Details</h2>
+        <p>Payment Status: <strong>{paymentStatus || "Not available"}</strong></p>
+        {transactionId && <p>Transaction ID: {transactionId}</p>}
+
+        <p>Your order is waiting for restaurant confirmation.</p>
+
+        <button
+          type="button"
+          onClick={() => navigate("/customer/orders")}
+        >
+          View My Orders
+        </button>
 
         <button
           type="button"

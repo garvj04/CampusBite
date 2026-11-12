@@ -6,6 +6,7 @@ from app.models.restaurant import Restaurant
 from app.models.user import User
 from app.models.order import Order
 from app.models.review import Review
+from app.core.dependencies import get_current_user
 from app.schemas.restaurant import (
     RestaurantCreate,
     RestaurantResponse
@@ -21,23 +22,17 @@ router = APIRouter(
 @router.post("/", response_model=RestaurantResponse)
 def create_restaurant(
     restaurant: RestaurantCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    owner = db.query(User).filter(
-        User.id == restaurant.owner_id
-    ).first()
-
-    if not owner:
-        raise HTTPException(
-            status_code=404,
-            detail="Restaurant owner not found"
-        )
+    if current_user.role != "RESTAURANT_OWNER":
+        raise HTTPException(status_code=403, detail="Only restaurant owners can create restaurants")
 
     new_restaurant = Restaurant(
         name=restaurant.name,
         description=restaurant.description,
         address=restaurant.address,
-        owner_id=restaurant.owner_id
+        owner_id=current_user.id
     )
 
     db.add(new_restaurant)
@@ -57,7 +52,8 @@ def get_restaurants(
 @router.get("/{restaurant_id}", response_model=RestaurantResponse)
 def get_restaurant(
     restaurant_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     restaurant = db.query(Restaurant).filter(
         Restaurant.id == restaurant_id
@@ -74,7 +70,8 @@ def get_restaurant(
 @router.get("/{restaurant_id}/statistics")
 def get_restaurant_statistics(
     restaurant_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     restaurant = db.query(Restaurant).filter(
         Restaurant.id == restaurant_id
@@ -85,6 +82,12 @@ def get_restaurant_statistics(
             status_code=404,
             detail="Restaurant not found"
         )
+
+    if current_user.role != "ADMIN" and not (
+        current_user.role == "RESTAURANT_OWNER"
+        and restaurant.owner_id == current_user.id
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     orders = db.query(Order).filter(
         Order.restaurant_id == restaurant_id

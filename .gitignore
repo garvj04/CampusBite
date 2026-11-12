@@ -2,3 +2,19 @@ __pycache__/
 *.pyc
 backend/campusbite.db
 backend/.env
+
+# Environment secrets
+.env
+backend/.env
+
+# Database files
+*.db
+*.sqlite3
+
+# Frontend build files
+frontend/node_modules/
+frontend/dist/
+
+# Python cache
+__pycache__/
+*.py[cod]

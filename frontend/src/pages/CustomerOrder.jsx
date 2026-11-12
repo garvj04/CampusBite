@@ -34,7 +34,7 @@ export default function CustomerOrder() {
     setError("");
 
     if (!userId) {
-      setError("Your user session could not be identified. Please log in again.");
+      setError("Your session could not be identified. Please log in again.");
       return;
     }
 
@@ -58,16 +58,24 @@ export default function CustomerOrder() {
         });
       }
 
+      const paymentResponse = await api.post("/payments/", {
+        order_id: orderId,
+        payment_method: "DUMMY",
+      });
+
       navigate("/customer/order/success", {
         state: {
           orderId,
           total,
+          paymentStatus: paymentResponse.data.status,
+          transactionId: paymentResponse.data.transaction_id,
+          restaurantId: Number(restaurantId),
         },
       });
     } catch (err) {
       setError(
         err.response?.data?.detail ||
-          "Unable to place the order."
+          "Unable to complete your order and payment."
       );
     } finally {
       setLoading(false);
@@ -99,6 +107,9 @@ export default function CustomerOrder() {
 
         <h2>Total: ₹{total.toFixed(2)}</h2>
 
+        <p>Payment Method: Dummy Payment</p>
+        <p>No real money will be charged.</p>
+
         {error && (
           <p className="error-message" role="alert">
             {error}
@@ -110,7 +121,7 @@ export default function CustomerOrder() {
           onClick={placeOrder}
           disabled={loading}
         >
-          {loading ? "Placing Order..." : "Place Order"}
+          {loading ? "Processing Order..." : "Place Order & Pay"}
         </button>
       </div>
     </div>

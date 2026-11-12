@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.menu_item import MenuItem
 from app.models.restaurant import Restaurant
+from app.models.user import User
+from app.core.dependencies import get_current_user
 from app.schemas.menu_item import MenuItemCreate, MenuItemResponse
 
 
@@ -16,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=MenuItemResponse)
 def create_menu_item(
     item: MenuItemCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     restaurant = db.query(Restaurant).filter(
         Restaurant.id == item.restaurant_id
@@ -27,6 +30,12 @@ def create_menu_item(
             status_code=404,
             detail="Restaurant not found"
         )
+
+    if current_user.role != "ADMIN" and not (
+        current_user.role == "RESTAURANT_OWNER"
+        and restaurant.owner_id == current_user.id
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     new_item = MenuItem(
         name=item.name,

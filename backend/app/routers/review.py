@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.review import Review
+from app.models.order import Order
 from app.models.user import User
 from app.models.restaurant import Restaurant
 from app.schemas.review import ReviewCreate, ReviewResponse
@@ -21,6 +22,32 @@ def create_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role != "CUSTOMER" or review.customer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Customers can only submit their own reviews")
+
+    delivered_order = db.query(Order).filter(
+        Order.customer_id == current_user.id,
+        Order.restaurant_id == review.restaurant_id,
+        Order.status == "DELIVERED"
+    ).first()
+
+    if not delivered_order:
+        raise HTTPException(
+            status_code=400,
+            detail="You can review a restaurant only after a delivered order"
+        )
+
+    existing_review = db.query(Review).filter(
+        Review.customer_id == current_user.id,
+        Review.restaurant_id == review.restaurant_id
+    ).first()
+
+    if existing_review:
+        raise HTTPException(
+            status_code=400,
+            detail="You have already reviewed this restaurant"
+        )
+
     if review.rating < 1 or review.rating > 5:
         raise HTTPException(
             status_code=400,
