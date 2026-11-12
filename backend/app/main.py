@@ -25,6 +25,7 @@ from app.routers.order_item import router as order_item_router
 from app.routers.review import router as review_router
 from app.routers.payment import router as payment_router
 from app.routers.admin_reminder_log import router as admin_reminder_log_router
+from app.routers.order_insight import router as order_insight_router
 from app.tasks.order_reminders import check_stale_orders
 
 
@@ -62,6 +63,7 @@ app.include_router(order_item_router)
 app.include_router(review_router)
 app.include_router(payment_router)
 app.include_router(admin_reminder_log_router)
+app.include_router(order_insight_router)
 
 
 @app.get("/")
