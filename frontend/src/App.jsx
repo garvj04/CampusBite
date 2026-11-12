@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import CustomerOrder from "./pages/CustomerOrder";
@@ -59,6 +60,11 @@ export default function App() {
       <Route
         path="/login"
         element={<Login />}
+      />
+
+      <Route
+        path="/register"
+        element={<Register />}
       />
 
       <Route

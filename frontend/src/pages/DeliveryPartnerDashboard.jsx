@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import DashboardHeader from "../components/DashboardHeader";
 
 export default function DeliveryPartnerDashboard() {
   const { userId } = useAuth();
@@ -87,7 +88,7 @@ export default function DeliveryPartnerDashboard() {
   return (
     <div className="page-container">
       <div className="dashboard-card">
-        <h1>Delivery Partner Dashboard</h1>
+        <DashboardHeader title="Delivery Partner Dashboard" />
         <p>View available orders and manage your deliveries.</p>
 
         {error && <p className="error-message">{error}</p>}

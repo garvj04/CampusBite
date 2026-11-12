@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import DashboardHeader from "../components/DashboardHeader";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -98,6 +99,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const refundPayment = async (paymentId) => {
+    setError("");
+    setNotice("");
+
+    try {
+      await api.patch(`/payments/${paymentId}/refund`);
+      setNotice(`Payment #${paymentId} refunded successfully.`);
+      await loadDashboard();
+    } catch (err) {
+      setError(
+        err.response?.data?.detail || "Unable to refund payment."
+      );
+    }
+  };
+
   if (loading) {
     return <div className="page-container"><div className="dashboard-card">Loading admin dashboard...</div></div>;
   }
@@ -109,7 +125,7 @@ export default function AdminDashboard() {
   return (
     <div className="page-container">
       <div className="dashboard-card">
-        <h1>Admin Dashboard</h1>
+        <DashboardHeader title="Admin Dashboard" />
         {error && <p className="error-message">{error}</p>}
         {notice && <p>{notice}</p>}
         <button onClick={loadDashboard}>Refresh Dashboard</button>
@@ -176,6 +192,14 @@ export default function AdminDashboard() {
               <p>Status: {payment.status}</p>
               <p>Method: {payment.payment_method}</p>
               <p>Transaction: {payment.transaction_id}</p>
+              {payment.status === "PAID" && (
+                <button
+                  type="button"
+                  onClick={() => refundPayment(payment.id)}
+                >
+                  Refund Payment
+                </button>
+              )}
             </div>
           ))}
         </div>

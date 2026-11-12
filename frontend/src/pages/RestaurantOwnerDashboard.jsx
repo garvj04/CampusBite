@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import DashboardHeader from "../components/DashboardHeader";
 
 const NEXT_STATUSES = {
   PLACED: ["ACCEPTED", "CANCELLED"],
@@ -20,6 +21,12 @@ export default function RestaurantOwnerDashboard() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   const [statistics, setStatistics] = useState(null);
+  const [deliveryPartners, setDeliveryPartners] = useState([]);
+  const [selectedPartners, setSelectedPartners] = useState({});
+
+  const [newRestaurantName, setNewRestaurantName] = useState("");
+  const [newRestaurantDescription, setNewRestaurantDescription] = useState("");
+  const [newRestaurantAddress, setNewRestaurantAddress] = useState("");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -45,18 +52,21 @@ export default function RestaurantOwnerDashboard() {
         setMenuItems([]);
         setOrders([]);
         setStatistics(null);
+        setDeliveryPartners([]);
         return;
       }
 
       setRestaurant(owned);
 
-      const [menu, stats] = await Promise.all([
+      const [menu, stats, partners] = await Promise.all([
         api.get(`/menu-items/restaurant/${owned.id}`),
         api.get(`/restaurants/${owned.id}/statistics`),
+        api.get("/users/delivery-partners"),
       ]);
 
       setMenuItems(menu.data);
       setStatistics(stats.data);
+      setDeliveryPartners(partners.data);
     } catch (err) {
       setError(
         err.response?.data?.detail || "Unable to load dashboard."
@@ -97,6 +107,60 @@ export default function RestaurantOwnerDashboard() {
     if (restaurant?.id) loadOrders();
   }, [restaurant?.id, orderPage, orderStatusFilter, ordersRefreshKey]);
 
+
+  const createRestaurant = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+
+    try {
+      await api.post("/restaurants/", {
+        name: newRestaurantName,
+        description: newRestaurantDescription,
+        address: newRestaurantAddress,
+      });
+
+      setNewRestaurantName("");
+      setNewRestaurantDescription("");
+      setNewRestaurantAddress("");
+      setMessage("Restaurant created successfully.");
+      await loadDashboard();
+    } catch (err) {
+      setError(
+        err.response?.data?.detail || "Unable to create restaurant."
+      );
+    }
+  };
+
+  const assignDeliveryPartner = async (orderId) => {
+    const partnerId = selectedPartners[orderId];
+
+    if (!partnerId) {
+      setError("Please select a delivery partner.");
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      await api.patch(`/orders/${orderId}/assign-delivery`, {
+        delivery_partner_id: Number(partnerId),
+      });
+
+      setMessage(`Delivery partner assigned to Order #${orderId}.`);
+      setSelectedPartners((current) => ({
+        ...current,
+        [orderId]: "",
+      }));
+      setOrdersRefreshKey((key) => key + 1);
+      await loadDashboard();
+    } catch (err) {
+      setError(
+        err.response?.data?.detail || "Unable to assign delivery partner."
+      );
+    }
+  };
 
   const addMenuItem = async (event) => {
     event.preventDefault();
@@ -152,7 +216,7 @@ export default function RestaurantOwnerDashboard() {
   return (
     <div className="page-container">
       <div className="dashboard-card">
-        <h1>Restaurant Owner Dashboard</h1>
+        <DashboardHeader title="Restaurant Owner Dashboard" />
 
         {error && (
           <p className="error-message">{error}</p>
@@ -161,7 +225,35 @@ export default function RestaurantOwnerDashboard() {
         {message && <p>{message}</p>}
 
         {!restaurant && (
-          <p>No restaurant is linked to this owner account.</p>
+          <>
+            <h2>Create Your Restaurant</h2>
+            <p>No restaurant is linked to this owner account. Enter your restaurant details below to get started.</p>
+
+            <form onSubmit={createRestaurant}>
+              <label>Restaurant Name</label>
+              <input
+                value={newRestaurantName}
+                onChange={(event) => setNewRestaurantName(event.target.value)}
+                required
+              />
+
+              <label>Description</label>
+              <input
+                value={newRestaurantDescription}
+                onChange={(event) => setNewRestaurantDescription(event.target.value)}
+                required
+              />
+
+              <label>Address</label>
+              <input
+                value={newRestaurantAddress}
+                onChange={(event) => setNewRestaurantAddress(event.target.value)}
+                required
+              />
+
+              <button type="submit">Create Restaurant</button>
+            </form>
+          </>
         )}
 
         {restaurant && (
@@ -280,6 +372,40 @@ export default function RestaurantOwnerDashboard() {
                   <p>Customer ID: {order.customer_id}</p>
                   <p>Amount: ₹{order.total_amount}</p>
                   <p>Status: {order.status}</p>
+
+                  {order.status === "READY" && !order.delivery_partner_id && (
+                    <div>
+                      <label>Assign Delivery Partner</label>
+                      <select
+                        value={selectedPartners[order.id] || ""}
+                        onChange={(event) =>
+                          setSelectedPartners((current) => ({
+                            ...current,
+                            [order.id]: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Select a delivery partner</option>
+                        {deliveryPartners.map((partner) => (
+                          <option key={partner.id} value={partner.id}>
+                            {partner.name} (ID: {partner.id})
+                          </option>
+                        ))}
+                      </select>
+
+                      {deliveryPartners.length === 0 && (
+                        <p>No delivery partners are available.</p>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={!selectedPartners[order.id]}
+                        onClick={() => assignDeliveryPartner(order.id)}
+                      >
+                        Assign Delivery Partner
+                      </button>
+                    </div>
+                  )}
 
                   {(NEXT_STATUSES[order.status] || []).map(
                     (status) => (

@@ -12,6 +12,7 @@ export default function CustomerOrders() {
   const [insightLoading, setInsightLoading] = useState(false);
   const [reviews, setReviews] = useState({});
   const [messages, setMessages] = useState({});
+  const [orderMessages, setOrderMessages] = useState({});
 
   const loadOrders = async () => {
     setLoading(true);
@@ -70,6 +71,25 @@ export default function CustomerOrders() {
       );
     } finally {
       setInsightLoading(false);
+    }
+  };
+
+  const cancelOrder = async (order) => {
+    try {
+      await api.patch(`/orders/${order.id}/status`, {
+        status: "CANCELLED",
+      });
+      await loadOrders();
+      setOrderMessages((previous) => ({
+        ...previous,
+        [order.id]: "Order cancelled successfully.",
+      }));
+    } catch (err) {
+      setOrderMessages((previous) => ({
+        ...previous,
+        [order.id]:
+          err.response?.data?.detail || "Unable to cancel this order.",
+      }));
     }
   };
 
@@ -158,6 +178,16 @@ export default function CustomerOrders() {
               <p>Restaurant ID: {order.restaurant_id}</p>
               <p>Total: ₹{order.total_amount}</p>
               <p>Status: <strong>{order.status}</strong></p>
+
+              {order.status === "PLACED" && (
+                <button type="button" onClick={() => cancelOrder(order)}>
+                  Cancel Order
+                </button>
+              )}
+
+              {orderMessages[order.id] && (
+                <p role="status">{orderMessages[order.id]}</p>
+              )}
 
               <h3>Items</h3>
               {order.items.length === 0 && <p>No item details available.</p>}

@@ -137,3 +137,29 @@ form button:disabled,
     padding: 20px;
   }
 }
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+}
+
+.dashboard-header button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.dashboard-header button:hover {
+  background: #1d4ed8;
+}

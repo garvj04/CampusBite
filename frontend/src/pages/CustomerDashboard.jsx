@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import DashboardHeader from "../components/DashboardHeader";
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export default function CustomerDashboard() {
   return (
     <div className="page-container">
       <div className="dashboard-card">
-        <h1>Customer Dashboard</h1>
+        <DashboardHeader title="Customer Dashboard" />
 
         <p>
           Browse restaurants and choose what you want to order.

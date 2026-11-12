@@ -64,6 +64,19 @@ def customer_only(
     }
 
 
+@router.get("/delivery-partners", response_model=list[UserResponse])
+def get_delivery_partners(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in {"RESTAURANT_OWNER", "ADMIN"}:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return db.query(User).filter(
+        User.role == "DELIVERY_PARTNER"
+    ).all()
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
     user_id: int,
