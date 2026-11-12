@@ -102,7 +102,7 @@ def create_order(
     new_order = Order(
         customer_id=order.customer_id,
         restaurant_id=order.restaurant_id,
-        total_amount=order.total_amount,
+        total_amount=0.0,
         status="PLACED"
     )
 

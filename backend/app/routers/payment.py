@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.payment import PaymentLedger
 from app.models.order import Order
+from app.models.order_item import OrderItem
 from app.schemas.payment import PaymentCreate, PaymentResponse
 from app.core.dependencies import get_current_user
 
@@ -34,6 +35,16 @@ def create_payment(
 
     if current_user.role != "CUSTOMER" or order.customer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
+
+    item_count = db.query(OrderItem).filter(
+        OrderItem.order_id == order.id
+    ).count()
+
+    if item_count == 0 or order.total_amount <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot pay for an empty order"
+        )
 
     existing_payment = db.query(PaymentLedger).filter(
         PaymentLedger.order_id == payment.order_id

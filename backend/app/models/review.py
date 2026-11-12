@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 
@@ -22,3 +23,5 @@ class Review(Base):
     rating = Column(Integer, nullable=False)
 
     comment = Column(String, nullable=True)
+    customer = relationship("User", back_populates="reviews")
+    restaurant = relationship("Restaurant", back_populates="reviews")

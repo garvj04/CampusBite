@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 
@@ -14,3 +15,6 @@ class MenuItem(Base):
         ForeignKey("restaurants.id"),
         nullable=False
     )
+
+    restaurant = relationship("Restaurant", back_populates="menu_items")
+    order_items = relationship("OrderItem", back_populates="menu_item")

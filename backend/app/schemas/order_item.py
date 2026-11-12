@@ -5,7 +5,6 @@ class OrderItemCreate(BaseModel):
     order_id: int
     menu_item_id: int
     quantity: int
-    price: float
 
 
 class OrderItemResponse(BaseModel):

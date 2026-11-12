@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 
@@ -22,3 +23,5 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False)
 
     price = Column(Float, nullable=False)
+    order = relationship("Order", back_populates="items")
+    menu_item = relationship("MenuItem", back_populates="order_items")

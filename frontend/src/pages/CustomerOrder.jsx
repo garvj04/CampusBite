@@ -44,7 +44,6 @@ export default function CustomerOrder() {
       const orderResponse = await api.post("/orders/", {
         customer_id: Number(userId),
         restaurant_id: Number(restaurantId),
-        total_amount: total,
       });
 
       const orderId = orderResponse.data.id;
@@ -54,7 +53,6 @@ export default function CustomerOrder() {
           order_id: orderId,
           menu_item_id: item.id,
           quantity: item.quantity,
-          price: item.price,
         });
       }
 
@@ -66,7 +64,7 @@ export default function CustomerOrder() {
       navigate("/customer/order/success", {
         state: {
           orderId,
-          total,
+          total: paymentResponse.data.amount,
           paymentStatus: paymentResponse.data.status,
           transactionId: paymentResponse.data.transaction_id,
           restaurantId: Number(restaurantId),

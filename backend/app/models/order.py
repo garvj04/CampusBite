@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 
@@ -32,3 +33,10 @@ class Order(Base):
         nullable=False,
         default="PLACED"
     )
+
+    customer = relationship("User", back_populates="customer_orders", foreign_keys=[customer_id])
+    delivery_partner = relationship("User", back_populates="delivery_orders", foreign_keys=[delivery_partner_id])
+    restaurant = relationship("Restaurant", back_populates="orders")
+    items = relationship("OrderItem", back_populates="order")
+    payments = relationship("PaymentLedger", back_populates="order")
+    reminder_logs = relationship("AdminReminderLog", back_populates="order")

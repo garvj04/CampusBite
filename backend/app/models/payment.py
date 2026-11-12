@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 
@@ -31,3 +32,4 @@ class PaymentLedger(Base):
         nullable=False,
         unique=True
     )
+    order = relationship("Order", back_populates="payments")

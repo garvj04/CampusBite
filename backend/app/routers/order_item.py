@@ -7,6 +7,7 @@ from app.models.order import Order
 from app.models.menu_item import MenuItem
 from app.models.restaurant import Restaurant
 from app.models.user import User
+from app.models.payment import PaymentLedger
 from app.schemas.order_item import OrderItemCreate, OrderItemResponse
 from app.core.dependencies import get_current_user
 
@@ -61,6 +62,16 @@ def create_order_item(
     ):
         raise HTTPException(status_code=403, detail="Cannot add items to this order")
 
+    existing_payment = db.query(PaymentLedger).filter(
+        PaymentLedger.order_id == order.id
+    ).first()
+
+    if existing_payment:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot modify an order after payment has been made"
+        )
+
     menu_item = db.query(MenuItem).filter(
         MenuItem.id == item.menu_item_id
     ).first()
@@ -83,6 +94,8 @@ def create_order_item(
         quantity=item.quantity,
         price=menu_item.price
     )
+
+    order.total_amount += menu_item.price * item.quantity
 
     db.add(new_order_item)
     db.commit()

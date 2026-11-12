@@ -4,7 +4,6 @@ from pydantic import BaseModel
 class OrderCreate(BaseModel):
     customer_id: int
     restaurant_id: int
-    total_amount: float
 
 
 class OrderStatusUpdate(BaseModel):

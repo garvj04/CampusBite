@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 
@@ -23,3 +24,4 @@ class AdminReminderLog(Base):
         nullable=False,
         default="PENDING"
     )
+    order = relationship("Order", back_populates="reminder_logs")
